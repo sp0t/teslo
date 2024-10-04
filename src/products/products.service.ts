@@ -2,12 +2,19 @@ import {
   Injectable,
   InternalServerErrorException,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
+
+import { InjectRepository } from '@nestjs/typeorm';
+
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
-import { InjectRepository } from '@nestjs/typeorm';
+
 import { Repository } from 'typeorm';
 import { Product } from './entities/product.entity';
+import { PaginationDto } from '../common/dtos/pagination.dto';
+
+import { validate as isUUID } from 'uuid';
 
 @Injectable()
 export class ProductsService {
@@ -21,26 +28,59 @@ export class ProductsService {
     try {
       const product = this.productRepository.create(createProductDto);
       await this.productRepository.save(product);
+
       return product;
     } catch (error) {
       this.handleDBExceptions(error);
     }
   }
 
-  findAll() {
-    return `This action returns all products`;
+  async findAll(paginationDto: PaginationDto) {
+    try {
+      const { limit = 0, offset = 0 } = paginationDto;
+      const products = await this.productRepository.find({
+        take: limit,
+        skip: offset,
+      });
+
+      return products;
+    } catch (error) {
+      this.handleDBExceptions(error);
+    }
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} product`;
+  async findOne(term: string) {
+    try {
+      let product: Product;
+
+      if (isUUID(term)) {
+        product = await this.productRepository.findOneBy({ id: term });
+      } else {
+        product = await this.productRepository.findOneBy({ slug: term });
+      }
+
+      if (!product)
+        throw new NotFoundException(`Product with the term ${term} not found`);
+
+      return product;
+    } catch (error) {
+      this.handleDBExceptions(error);
+    }
   }
 
   update(id: number, updateProductDto: UpdateProductDto) {
     return `This action updates a #${id} product`;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} product`;
+  async remove(id: string) {
+    try {
+      const product = await this.findOne(id);
+      await this.productRepository.remove(product);
+
+      return product;
+    } catch (error) {
+      this.handleDBExceptions(error);
+    }
   }
 
   private handleDBExceptions(error: any) {
