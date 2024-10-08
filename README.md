@@ -13,3 +13,5 @@
    `docker-compose up -d`
 6. Levantar modo desarrollo
    `yarn start:dev`
+7. Ejecutar Seed Data para tener datos de prueba en DB
+   `http://localhost:${PORT}/api/seed`

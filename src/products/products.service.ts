@@ -37,7 +37,6 @@ export class ProductsService {
       const product = this.productRepository.create(productDetails);
 
       const productImages = images.map((url) => {
-        console.log(url);
         return this.productImageRepository.create({ url });
       });
 
